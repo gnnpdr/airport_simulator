@@ -151,10 +151,10 @@ public:
 
     size_t get_len () const {return len_;}
     size_t get_wid () const {return wid_;}
-    // std::vector<Cell*> get_cells () const {return cells_;}
     const std::vector<size_t>& get_reg_offices () const {return reg_offices_;}
     const std::vector<size_t>& get_enterances () const {return enterances_;}
     const std::vector<size_t>& get_gates () const {return gates_;}
+    const std::vector<size_t>& get_obstacles () const {return obstacles_;}
 
     Field(size_t len, size_t wid, 
           const std::vector<std::pair<size_t, size_t>>& obstacles_pos,
@@ -267,74 +267,12 @@ public:
             std::cout << std::endl;
         }
     }
-};
 
-//------------------------------------------------------------------------------------------
-
-const size_t MID_SPEED = 50;
-const size_t HIGH_SPEED = 100;
-const size_t LOW_SPEED = 10;
-
-class Passenger
-{
-protected:
-
-    size_t speed_ = MID_SPEED;
-    size_t aim_ind_;
-    std::vector<size_t> path_;
-    
-public:
-
-    Passenger() {}
-    Passenger(size_t speed) : speed_(speed) {}
- 
-    const size_t get_aim () const {return aim_ind_;}
-    const std::vector<size_t>& get_path () const {return path_;}
-
-    void set_aim(size_t aim)
+    bool is_passable(size_t ind)
     {
-        aim_ind_ = aim;
+        auto cell_it = std::find(obstacles_.begin(), obstacles_.end(), ind);
+        if (cell_it != obstacles_.end())
+            return false;
+        return true;
     }
-
-    void start_algo(Field& field)
-    {
-        size_t free_office_ind = field.find_free_reg_office_ind();
-        RegOffice* free_office = static_cast<RegOffice*>(field.get_cell_by_ind(free_office_ind));
-        free_office->take_turn();
-        aim_ind_ = free_office_ind;
-        path_ = find_path();
-    }
-
-    std::vector<size_t> find_path()
-    {
-        //astar_algo_for_aim_...
-        return {};
-    }
-
-    size_t reg_proc(Field& field)
-    {
-        auto& gates = field.get_gates();
-        size_t gatenum = rand() % (gates.size() + 1);
-        RegOffice* the_office = static_cast<RegOffice*>(field.get_cell_by_ind(aim_ind_));
-        the_office->free_queue_space();
-        return gates[gatenum]; 
-    }
-
-    void end_algo(Field& field, RegOffice& reg_office)
-    {
-        aim_ind_ = reg_proc(field);
-        path_ = find_path();
-    }
-};
-
-class Busy : public Passenger
-{
-public:
-    Busy() : Passenger(HIGH_SPEED) {}
-};
-
-class Old : public Passenger
-{
-public:
-    Old() : Passenger(LOW_SPEED) {}
 };

@@ -1,5 +1,6 @@
 #include <iostream>
 #include "place.hpp"
+#include "psg.hpp"
 
 int main()
 {
@@ -11,6 +12,11 @@ int main()
     Field field(6, 6, obstacles, reg_offices, enters, gates);
 
     field.draw();
+
+    Passenger p1(field);
+    std::cout << "p coords " << p1.get_x() << ", " << p1.get_y() << std::endl;
+    p1.start_algo();
+    p1.end_algo();
 
     return 0;
 }
