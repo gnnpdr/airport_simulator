@@ -1,5 +1,6 @@
 #pragma once
-#include "place.hpp"
+#include "field.hpp"
+#include "common.hpp"
 #include <unordered_set>
 #include <vector>
 #include <functional>
@@ -9,13 +10,12 @@
 #include <algorithm>
 
 
-
 struct AStarCell
 {
     size_t ind_;
     size_t start_dis_;
     size_t aim_dist_;
-    size_t perf_eval_;       //perfomance evaluetion = start_dist + aim_dist
+    size_t perf_eval_; 
 
     bool operator>(const AStarCell& other) const 
     {
@@ -36,7 +36,7 @@ struct AStarCell
     }
 };
 
-void print_priority_queue(std::priority_queue<AStarCell, std::vector<AStarCell>, std::greater<AStarCell>>& original_pq) 
+inline void print_priority_queue(std::priority_queue<AStarCell, std::vector<AStarCell>, std::greater<AStarCell>>& original_pq) 
 {
     std::priority_queue<AStarCell, std::vector<AStarCell>, std::greater<AStarCell>> pq_copy = original_pq;
     
