@@ -1,17 +1,54 @@
-#include "common.hpp"
 #include "field.hpp"
 
 Cell::Cell(size_t x, size_t y) : x_(x), y_(y) {}
-
 Cell::Cell(size_t x, size_t y, bool passable) : x_(x), y_(y), passable_(passable) {} 
 
 size_t Cell::get_x () const {return x_;}
 size_t Cell::get_y () const {return y_;}
+size_t Cell::get_next_psg_step() 
+{
+    if (!psg_)
+        return ERROR_VAL;
+    return psg_->get_next_step();
+}
+
+StatusTypes Cell::get_psg_status() 
+{
+    if (!psg_)
+        return NULLPTR; 
+    return psg_->get_status();
+}
 bool Cell::is_passable () const {return passable_;}
+
+bool Cell::is_psg_nullptr()
+{
+    if (!psg_)
+        return true;
+    return false;
+}
 
 bool Cell::operator==(const Cell& other) const 
 {
     return x_ == other.x_ && y_ == other.y_;
+}
+
+size_t Cell::get_psg_aim_ind() 
+{
+    if (!psg_)
+        return ERROR_VAL;
+    return psg_->get_aim();
+}
+
+bool Cell::is_occupied()
+{
+    if (!psg_)
+        return false;
+    return true;
+}
+
+void Cell::set_cell_free()
+{
+    psg_ = nullptr;
 }
 
 //-----------------------------------------------------------
@@ -55,6 +92,23 @@ const std::vector<size_t>& Field::get_reg_offices () const {return reg_offices_;
 const std::vector<size_t>& Field::get_enterances () const {return enterances_;}
 const std::vector<size_t>& Field::get_gates () const {return gates_;}
 const std::vector<size_t>& Field::get_obstacles () const {return obstacles_;}
+
+Cell* Field::get_cell_by_ind(size_t ind) const 
+{
+    if (ind < cells_.size()) {
+        return cells_[ind].get();
+    }
+    return nullptr;
+}
+
+bool Field::is_passable(size_t ind)
+{
+    auto cell_it = std::find(obstacles_.begin(), obstacles_.end(), ind);
+    if (cell_it != obstacles_.end())
+        return false;
+    return true;
+}
+
 
 Field::Field(size_t len, size_t wid, 
       const std::vector<std::pair<size_t, size_t>>& obstacles_pos,
@@ -145,21 +199,6 @@ size_t Field::find_free_reg_office_ind()
     });
 }
 
-Cell* Field::get_cell_by_ind(size_t ind) const 
-{
-    if (ind < cells_.size()) {
-        return cells_[ind].get();
-    }
-    return nullptr;
-}
-
-bool Field::is_passable(size_t ind)
-{
-    auto cell_it = std::find(obstacles_.begin(), obstacles_.end(), ind);
-    if (cell_it != obstacles_.end())
-        return false;
-    return true;
-}
 
 void Field::draw () const
 {
@@ -174,6 +213,85 @@ void Field::draw () const
     }
 }
 
-size_t Cell::get_next_psg_step() {return psg_->get_next_step();}
+//!!нужно обратно 
+PathSituation Field::check_next_step(size_t psg_aim, size_t psg_cur_ind, size_t next_step_ind)
+{
+    Cell* cell = get_cell_by_ind(next_step_ind);
+    if (!cell)
+        return NO_CELL_NULLPTR;  // Клетки не существует
 
-StatusTypes Cell::get_psg_status() {return psg_->get_status();}
+    if (!cell->is_occupied())
+    {
+        if (!is_there_others_interested(next_step_ind))
+            return FREE;
+        return OTHER_INTERESTED;
+    }
+    
+    bool is_psg_nullptr = cell->is_psg_nullptr();
+    if (!is_psg_nullptr)
+    {
+        StatusTypes opponent_status = cell->get_psg_status();
+        if (opponent_status == WAITING_IN_LINE)
+        {
+            size_t opponents_aim = cell->get_psg_aim_ind();
+            if (opponents_aim == psg_aim)
+                return QUEUE;
+            return QUEUE_OBSTACLE; 
+        }
+        size_t opponent_next_step_ind = cell->get_next_psg_step();
+        if (psg_cur_ind == opponent_next_step_ind)
+            return COLLISION;
+    }
+
+    return PASSING_BY;
+}
+
+bool Field::is_there_others_interested(size_t next_step_ind)
+{
+    std::pair<int, int> cur_coord = f1dto2d(next_step_ind, wid_);
+    for (auto& step : steps)
+    {
+        std::pair<int, int> new_coord = {cur_coord.first + step.first, cur_coord.second + step.second};
+        //std::cout << "new step " << new_coord.first << ", " << new_coord.second << std::endl;
+        if (new_coord.first < 0 || new_coord.second < 0)
+        {
+            //std::cout << "less" << std::endl;
+            continue;
+        }
+        if (new_coord.first > static_cast<int>(wid_) || new_coord.second > static_cast<int>(len_))
+        {
+            //std::cout << "more" << std::endl;
+            continue;
+        }
+        size_t cell_ind = f2dto1d(new_coord.first, new_coord.second, wid_);
+        Cell* cell = get_cell_by_ind(cell_ind);
+        
+        size_t opponents_aim = cell->get_psg_aim_ind();
+        if (opponents_aim == ERROR_VAL)
+            continue;           //здесь просто нет пассажира
+        if (opponents_aim == next_step_ind)
+            return true;
+    }
+    return false;
+}
+
+std::vector<size_t> Field::update_obstacles_by_opponent(size_t opponents_coord)
+{
+    std::vector<size_t> obstacles;
+    std::copy(obstacles_.begin(), obstacles_.end(), obstacles.begin());
+    obstacles.push_back(opponents_coord);
+    return obstacles;
+}
+
+std::vector<size_t> Field::update_obstacles_by_queues()
+{
+    std::vector<size_t> obstacles;
+    Cell* cell;
+    for (size_t ind = 0 ; ind < wid_ * len_; ind++)
+    {
+        cell = get_cell_by_ind(ind);
+        if (!cell->is_passable() || cell->is_occupied())
+            obstacles.push_back(ind);
+    }
+    return obstacles;
+}

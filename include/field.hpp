@@ -1,9 +1,11 @@
 #pragma once
+#include "common.hpp"
 #include "psg.hpp"
 #include <vector>
 #include <memory>
 #include <algorithm>
 #include <cstdlib>
+#include <iostream>
 
 class Passenger;
 
@@ -33,20 +35,26 @@ protected:
     size_t x_ = 0;
     size_t y_ = 0;
     bool passable_ = true;
-    Passenger* psg_;
-    bool occupied_by_queue_ = false;
+    Passenger* psg_ = nullptr;
+    //bool occupied_by_queue_ = false;
 
 public:
 
     Cell() = default;
-
     Cell(size_t x, size_t y);
-
     Cell(size_t x, size_t y, bool passable);
 
     size_t get_x () const;
     size_t get_y () const;
     bool is_passable () const;
+    bool is_occupied();
+    void set_cell_free();
+
+    //info about cur passenger
+    size_t get_next_psg_step();
+    StatusTypes get_psg_status();
+    size_t get_psg_aim_ind();
+    bool is_psg_nullptr();
 
     bool operator==(const Cell& other) const;
 
@@ -56,24 +64,6 @@ public:
             std::cout << ".";
         else
             std::cout << "#";
-    }
-
-
-    //info about cur passenger
-    size_t get_next_psg_step();
-    StatusTypes get_psg_status();
-    size_t get_psg_aim_ind() {return psg_->get_aim();}
-
-    bool is_occupied()
-    {
-        if (!psg_)
-            return false;
-        return true;
-    }
-
-    void set_cell_free()
-    {
-        psg_ = nullptr;
     }
 };
 
@@ -86,7 +76,6 @@ class Gate : public Cell
 public:
 
     Gate(size_t x, size_t y, size_t gatenum);
-
     size_t get_gatenum () const;
 
     void draw () const override
@@ -104,7 +93,6 @@ class Enterance : public Cell
 public:
 
     Enterance(size_t x, size_t y, size_t enternum);
-
     size_t get_enternum () const;
 
     void draw () const override
@@ -157,6 +145,8 @@ public:
     const std::vector<size_t>& get_enterances () const;
     const std::vector<size_t>& get_gates () const;
     const std::vector<size_t>& get_obstacles () const;
+    bool is_passable(size_t ind);
+    Cell* get_cell_by_ind(size_t ind) const ;
 
     Field(size_t len, size_t wid, 
           const std::vector<std::pair<size_t, size_t>>& obstacles_pos,
@@ -166,9 +156,10 @@ public:
 
     size_t find_free_reg_office_ind();
 
-    Cell* get_cell_by_ind(size_t ind) const ;
-
     void draw () const override;
 
-    bool is_passable(size_t ind);
+    PathSituation check_next_step(size_t psg_aim, size_t psg_cur_ind, size_t next_step_ind);
+    bool is_there_others_interested(size_t next_step_ind);
+    std::vector<size_t> update_obstacles_by_opponent(size_t opponents_coord);
+    std::vector<size_t> update_obstacles_by_queues();
 };
