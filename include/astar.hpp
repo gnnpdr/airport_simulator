@@ -56,8 +56,12 @@ class AStarPathFinder
     std::unordered_map<size_t, size_t> parents_;
 
     std::vector<size_t> path_;
+    std::vector<size_t> obstacles_;
 
 public:
+
+    AStarPathFinder(Field& field) : obstacles_(field.get_obstacles()) {}
+    AStarPathFinder(std::vector<size_t> obstacles) : obstacles_(obstacles) {} 
 
     std::vector<size_t> find_path(Field& field, size_t start, size_t aim)
     {
@@ -68,7 +72,7 @@ public:
         while (!open_cells_.empty())
         {
             std::cout << "aim " << aim << std::endl;
-            print_priority_queue(open_cells_);
+            //print_priority_queue(open_cells_);
 
             AStarCell cur = open_cells_.top();
             open_cells_.pop();
@@ -143,9 +147,9 @@ public:
                 continue;
             }
 
-            if (!field.is_passable(new_start))
+            if (std::find(obstacles_.begin(), obstacles_.end(), new_start) != obstacles_.end())
             {
-                std::cout << "not passeble" << std::endl;
+                //std::cout << "not passeble" << std::endl;
                 continue;
             }
 

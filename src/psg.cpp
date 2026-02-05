@@ -39,7 +39,7 @@ void Passenger::start_algo()
     aim_ind_ = free_office_ind;
     free_office->take_turn();
 
-    AStarPathFinder path_finder;
+    AStarPathFinder path_finder(field_);
     size_t cur_ind = f2dto1d(x_, y_, field_.get_wid());
     path_ = path_finder.find_path(field_, cur_ind, aim_ind_);
     std::cout << "path to reg office ind" << aim_ind_ << std::endl; 
@@ -47,17 +47,22 @@ void Passenger::start_algo()
     move();
 }
 
+//void Passenger::move()
+//{
+//    size_t wid = field_.get_wid();
+//    while (!path_.empty())
+//    {
+//        size_t new_ind = path_.front();
+//        path_.erase(path_.begin());
+//        std::pair<size_t, size_t> new_coord = f1dto2d(new_ind, wid);
+//        x_ = new_coord.first;
+//        y_ = new_coord.second;
+//    }
+//}
+
 void Passenger::move()
 {
-    size_t wid = field_.get_wid();
-    while (!path_.empty())
-    {
-        size_t new_ind = path_.front();
-        path_.erase(path_.begin());
-        std::pair<size_t, size_t> new_coord = f1dto2d(new_ind, wid);
-        x_ = new_coord.first;
-        y_ = new_coord.second;
-    }
+    PathController path_controller(field_, this);
 }
 
 size_t Passenger::reg_proc()
@@ -72,7 +77,7 @@ size_t Passenger::reg_proc()
 void Passenger::end_algo()
 {
     aim_ind_ = reg_proc();
-    AStarPathFinder path_finder;
+    AStarPathFinder path_finder(field_);
     size_t cur_ind = f2dto1d(x_, y_, field_.get_wid());
     path_ = path_finder.find_path(field_, cur_ind, aim_ind_);
     std::cout << "path to gate ind" << aim_ind_ << std::endl; 
