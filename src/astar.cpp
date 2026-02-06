@@ -80,7 +80,7 @@ void AStarPathFinder::update_open_cells(AStarCell& cur, size_t aim)
             //std::cout << "less" << std::endl;
             continue;
         }
-        if (new_coord.first > static_cast<int>(field_.get_wid()) || new_coord.second > static_cast<int>(field_.get_len()))
+        if (new_coord.first > static_cast<int>(field_.get_wid()) || new_coord.second > static_cast<int>(field_.get_heig()))
         {
             //std::cout << "more" << std::endl;
             continue;

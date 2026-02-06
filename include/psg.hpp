@@ -2,6 +2,7 @@
 #include "common.hpp"
 #include "astar.hpp"
 #include <vector>
+#include "visitor.hpp"
 
 class Cell;
 class Field;
@@ -10,7 +11,7 @@ const size_t MID_SPEED = 50;
 const size_t HIGH_SPEED = 100;
 const size_t LOW_SPEED = 10;
 
-class Passenger
+class Passenger : public GameObject
 {
     size_t x_;
     size_t y_;
@@ -48,14 +49,24 @@ public:
     void move();
     size_t reg_proc();
     void end_algo();
+
+    void accept(Visitor& visitor) override 
+    {
+        visitor.visit(this);
+    }
 };
 
 //-----------------------------------------------------------
 
-class Busy : public Passenger
+/*class Busy : public Passenger
 {
 public:
     Busy(Field& field);
+
+    void accept(Visitor& visitor) override 
+    {
+        visitor.visit(this);
+    }
 };
 
 //-----------------------------------------------------------
@@ -63,5 +74,11 @@ public:
 class Old : public Passenger
 {
 public:
+
     Old(Field& field);
-};
+
+    void accept(Visitor& visitor) override 
+    {
+        visitor.visit(this);
+    }
+};*/

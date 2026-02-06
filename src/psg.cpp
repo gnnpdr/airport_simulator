@@ -74,13 +74,6 @@ void Passenger::move()
         std::cout << "cur coord = ( " << x_ << ", " << y_ << " )" << std::endl;
         std::cout << "cur_ind = " << cur_ind << std::endl;
         make_step();
-        //size_t next_cell_ind = path_[1];
-        //std::cout << "next_cell_ind = " << next_cell_ind << std::endl;
-        //std::cout << "cur_ind = " << cur_ind << std::endl;
-        //PathSituation step_status = field_.check_next_step(aim_ind_, cur_ind, next_cell_ind);
-        //printf("pathsituation = %d\n", step_status);
-        //std::pair<size_t, size_t> next_coord = f1dto2d(next_cell_ind, field_.get_wid());
-        //std::cout << "next_coord = " << next_coord.first << ", " << next_coord.second << std::endl;
 
         //x_ = next_coord.first;
         //y_ = next_coord.second;
@@ -117,41 +110,6 @@ void Passenger::end_algo()
 
 void Passenger::make_step()
 {
-    /*if (this == nullptr) {
-        printf("CRITICAL: this is nullptr!\n");
-        return;
-    }
-    
-    printf("=== ENTER make_step() ===\n");
-    printf("this address: %p\n", (void*)this);
-    fflush(stdout);
-    
-    // ШАГ 1: Проверка field_
-    printf("Checking field_...\n");
-    fflush(stdout);
-    
-    try {
-        printf("Field address: %p\n", (void*)&field_);
-        size_t w = field_.get_wid();
-        printf("Field width: %zu\n", w);
-    } catch (...) {
-        printf("ERROR: Cannot access field_\n");
-        return;
-    }
-
-    printf("hello\n");
-
-     printf("Checking path_...\n");
-    printf("path_ address: %p\n", (void*)&path_);
-    printf("path_ size: %zu\n", path_.size());
-    fflush(stdout);
-
-    if (path_.size() < 2) {
-        std::cout << "ERROR: path too short in make_step()! Size = " 
-                  << path_.size() << std::endl;
-        return;
-    }*/
-
     size_t next_cell_ind = path_[1];
     size_t cur_ind = path_[0];
     PathSituation step_status = field_.check_next_step(aim_ind_, cur_ind, next_cell_ind);
@@ -228,8 +186,8 @@ void Passenger::get_around_queue(size_t cur_ind)
 
 //-----------------------------------------------------------
 
-Busy::Busy(Field& field) : Passenger(HIGH_SPEED, field) {}
+/*Busy::Busy(Field& field) : Passenger(HIGH_SPEED, field) {}
 
 //-----------------------------------------------------------
 
-Old::Old(Field& field) : Passenger(LOW_SPEED, field) {}
+Old::Old(Field& field) : Passenger(LOW_SPEED, field) {}*/

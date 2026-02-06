@@ -6,16 +6,10 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include "visitor.hpp"
 
 class Passenger;
 
-class DrawableObject
-{
-public:
-    virtual void draw() const = 0;
-
-    virtual ~DrawableObject() = default;
-};
 
 //-------------------------------------------------------------------------------------------------
 
@@ -28,7 +22,9 @@ enum CellType
     ENTER
 };
 
-class Cell : DrawableObject
+const size_t CELL_SIZE = 1;
+
+class Cell : GameObject
 {
 protected:
 
@@ -56,14 +52,13 @@ public:
     size_t get_psg_aim_ind();
     bool is_psg_nullptr();
 
+    Passenger* get_psg();
+
     bool operator==(const Cell& other) const;
 
-    void draw () const override
+    void accept(Visitor& visitor) override 
     {
-        if (passable_)
-            std::cout << ".";
-        else
-            std::cout << "#";
+        visitor.visit(this);
     }
 };
 
@@ -78,9 +73,9 @@ public:
     Gate(size_t x, size_t y, size_t gatenum);
     size_t get_gatenum () const;
 
-    void draw () const override
+    void accept(Visitor& visitor) override 
     {
-        std::cout << "{}";
+        visitor.visit(this);
     }
 };
 
@@ -95,9 +90,9 @@ public:
     Enterance(size_t x, size_t y, size_t enternum);
     size_t get_enternum () const;
 
-    void draw () const override
+    void accept(Visitor& visitor) override 
     {
-        std::cout << "_";
+        visitor.visit(this);
     }
 };
 
@@ -118,17 +113,17 @@ public:
 
     bool operator<(const RegOffice& other) const;
 
-    void draw () const override
+    void accept(Visitor& visitor) override 
     {
-        std::cout << "$";
+        visitor.visit(this);
     }
 };
 
 //--------------------------------------------------------------------------------------
 
-class Field : DrawableObject
+class Field : GameObject
 {
-    size_t len_ = 0;
+    size_t heig_ = 0;
     size_t wid_ = 0;
     std::vector<std::unique_ptr<Cell>> cells_;  
 
@@ -139,7 +134,7 @@ class Field : DrawableObject
 
 public:
 
-    size_t get_len () const;
+    size_t get_heig () const;
     size_t get_wid () const;
     const std::vector<size_t>& get_reg_offices () const;
     const std::vector<size_t>& get_enterances () const;
@@ -148,7 +143,7 @@ public:
     bool is_passable(size_t ind);
     Cell* get_cell_by_ind(size_t ind) const ;
 
-    Field(size_t len, size_t wid, 
+    Field(size_t heig, size_t wid, 
           const std::vector<std::pair<size_t, size_t>>& obstacles_pos,
           const std::vector<std::pair<size_t, size_t>>& office_pos,
           const std::vector<std::pair<size_t, size_t>>& entrance_pos,
@@ -156,7 +151,10 @@ public:
 
     size_t find_free_reg_office_ind();
 
-    void draw () const override;
+    void accept(Visitor& visitor) override 
+    {
+        visitor.visit(this);
+    }
 
     PathSituation check_next_step(size_t psg_aim, size_t psg_cur_ind, size_t next_step_ind);
     bool is_there_others_interested(size_t next_step_ind);

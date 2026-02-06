@@ -51,6 +51,11 @@ void Cell::set_cell_free()
     psg_ = nullptr;
 }
 
+Passenger* Cell::get_psg()
+{
+    return psg_;
+}
+
 //-----------------------------------------------------------
 
 Gate::Gate(size_t x, size_t y, size_t gatenum) : Cell(x, y), gatenum_(gatenum) {}
@@ -86,7 +91,7 @@ bool RegOffice::operator<(const RegOffice& other) const
 
 //-----------------------------------------------------------
 
-size_t Field::get_len () const {return len_;}
+size_t Field::get_heig () const {return heig_;}
 size_t Field::get_wid () const {return wid_;}
 const std::vector<size_t>& Field::get_reg_offices () const {return reg_offices_;}
 const std::vector<size_t>& Field::get_enterances () const {return enterances_;}
@@ -110,13 +115,13 @@ bool Field::is_passable(size_t ind)
 }
 
 
-Field::Field(size_t len, size_t wid, 
+Field::Field(size_t heig, size_t wid, 
       const std::vector<std::pair<size_t, size_t>>& obstacles_pos,
       const std::vector<std::pair<size_t, size_t>>& office_pos,
       const std::vector<std::pair<size_t, size_t>>& entrance_pos,
-      const std::vector<std::pair<size_t, size_t>>& gate_pos) : len_(len), wid_(wid)
+      const std::vector<std::pair<size_t, size_t>>& gate_pos) : heig_(heig), wid_(wid)
 {
-    std::vector<CellType> field_prototipe(wid_*len_, SIMPLE); 
+    std::vector<CellType> field_prototipe(wid_*heig_, SIMPLE); 
     for (const auto& obstacle : obstacles_pos)
     {
         int index = f2dto1d(obstacle.first, obstacle.second, wid_);
@@ -145,7 +150,7 @@ Field::Field(size_t len, size_t wid,
     size_t enter_cnt = 0;
     size_t gate_cnt = 0;
 
-    for (size_t i = 0; i < wid_*len_; i++)
+    for (size_t i = 0; i < wid_*heig_; i++)
     {
         std::pair<size_t, size_t> coords = f1dto2d(i, wid_);
         size_t x = coords.first;
@@ -200,25 +205,24 @@ size_t Field::find_free_reg_office_ind()
 }
 
 
-void Field::draw () const
-{
-    for (size_t y = 0; y < len_; y++)
-    {
-        for (size_t x = 0; x < wid_; x++)
-        {
-            size_t ind =  f2dto1d(x, y, wid_);
-            cells_[ind]->draw();
-        }
-        std::cout << std::endl;
-    }
-}
+//void Field::draw () const
+//{
+//    for (size_t y = 0; y < heig_; y++)
+//    {
+//        for (size_t x = 0; x < wid_; x++)
+//        {
+//            size_t ind =  f2dto1d(x, y, wid_);
+//            cells_[ind]->draw();
+//        }
+//        std::cout << std::endl;
+//    }
+//}
 
-//!!нужно обратно 
 PathSituation Field::check_next_step(size_t psg_aim, size_t psg_cur_ind, size_t next_step_ind)
 {
     Cell* cell = get_cell_by_ind(next_step_ind);
     if (!cell)
-        return NO_CELL_NULLPTR;  // Клетки не существует
+        return NO_CELL_NULLPTR;
 
     if (!cell->is_occupied())
     {
@@ -258,7 +262,7 @@ bool Field::is_there_others_interested(size_t next_step_ind)
             //std::cout << "less" << std::endl;
             continue;
         }
-        if (new_coord.first > static_cast<int>(wid_) || new_coord.second > static_cast<int>(len_))
+        if (new_coord.first > static_cast<int>(wid_) || new_coord.second > static_cast<int>(heig_))
         {
             //std::cout << "more" << std::endl;
             continue;
@@ -287,7 +291,7 @@ std::vector<size_t> Field::update_obstacles_by_queues()
 {
     std::vector<size_t> obstacles;
     Cell* cell;
-    for (size_t ind = 0 ; ind < wid_ * len_; ind++)
+    for (size_t ind = 0 ; ind < wid_ * heig_; ind++)
     {
         cell = get_cell_by_ind(ind);
         if (!cell->is_passable() || cell->is_occupied())
