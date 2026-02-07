@@ -45,6 +45,7 @@ public:
     bool is_passable () const;
     bool is_occupied();
     void set_cell_free();
+    void set_psg(Passenger* psg);
 
     //info about cur passenger
     size_t get_next_psg_step();
@@ -132,6 +133,11 @@ class Field : GameObject
     std::vector<size_t> gates_;
     std::vector<size_t> obstacles_;
 
+    std::vector<Passenger> passengers_;
+
+    bool is_paused_ = false;
+    float simulation_time_ = 0.0f;
+
 public:
 
     size_t get_heig () const;
@@ -151,13 +157,25 @@ public:
 
     size_t find_free_reg_office_ind();
 
+    Passenger& add_passenger();
+
     void accept(Visitor& visitor) override 
     {
         visitor.visit(this);
     }
 
+    void togglePause() 
+    {
+        is_paused_ = !is_paused_;
+    }
+
     PathSituation check_next_step(size_t psg_aim, size_t psg_cur_ind, size_t next_step_ind);
-    bool is_there_others_interested(size_t next_step_ind);
+    bool is_there_others_interested(size_t cur_ind, size_t next_step_ind);
     std::vector<size_t> update_obstacles_by_opponent(size_t opponents_coord);
     std::vector<size_t> update_obstacles_by_queues();
+
+    void update(float delta_time);
+    void set_paths();
+    void plan_steps();
+    void step();
 };

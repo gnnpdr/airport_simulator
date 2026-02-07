@@ -1,14 +1,6 @@
 #include "psg.hpp"
 
-Passenger::Passenger(Field& field) : field_(field) 
-{
-    auto& enters = field_.get_enterances();
-    size_t enter_ind = rand() % enters.size();
-    size_t enter_coord_1d = enters[enter_ind];
-    std::pair<size_t, size_t> enter_coord_2d = f1dto2d(enter_coord_1d, field.get_wid());
-    x_ = enter_coord_2d.first;
-    y_ = enter_coord_2d.second;
-}
+Passenger::Passenger(Field& field) : field_(field) {}
 
 Passenger::Passenger(size_t speed, Field& field) : speed_(speed), field_(field)
 {
@@ -36,60 +28,50 @@ void Passenger::set_aim(size_t aim)
     aim_ind_ = aim;
 }
 
-void Passenger::start_algo()
+//------------------------------------------------------------
+
+void Passenger::find_reg()
 {
+    std::cout << "FIND_REG!!" << std::endl;
+    std::cout << "cur coord = ( " << x_ << ", " << y_ << " )" << std::endl;
     size_t free_office_ind = field_.find_free_reg_office_ind();
-    std::cout << "free office ind " << free_office_ind << std::endl;
     RegOffice* free_office = static_cast<RegOffice*>(field_.get_cell_by_ind(free_office_ind));
     std::cout << "free office coords " << free_office->get_x() << ", " << free_office->get_y() << std::endl;
 
     aim_ind_ = free_office_ind;
-    free_office->take_turn();
+    //! это потомfree_office->take_turn();
 
     AStarPathFinder path_finder(field_);
     size_t cur_ind = f2dto1d(x_, y_, field_.get_wid());
     path_ = path_finder.find_path(cur_ind, aim_ind_);
+    status_ = GOING_TO_REG;
     std::cout << "path to reg office ind" << aim_ind_ << std::endl; 
     path_finder.print_path();
-    std::cout << "cur coord = ( " << x_ << ", " << y_ << " )";
-
-    printf("HERE!!\n");
-    move();
 }
 
-//!! шагать нужно до того момента, пока мы не достигнем цели или не встанем в очередь (стоит проверять статус пассажира)
-void Passenger::move()
+void Passenger::find_gate()
 {
-    if (path_.empty()) {
-        std::cout << "No path to move!" << std::endl;
-        return;
-    }
-    printf("wow\n");
-    std::cout << "cur coord = ( " << x_ << ", " << y_ << " )";
+
+    RegOffice* reg_office = static_cast<RegOffice*>(field_.get_cell_by_ind(aim_ind_));
+    if(status_ == GOING_TO_REG)
+        reg_office->take_turn();
+
+    aim_ind_ = reg();
+
+    reg_office->free_queue_space();
+
+    AStarPathFinder path_finder(field_);
     size_t cur_ind = f2dto1d(x_, y_, field_.get_wid());
-    std::cout << "aim_ind = " << aim_ind_ << std::endl;
+    path_ = path_finder.find_path(cur_ind, aim_ind_);
+    std::cout << "path to gate ind" << aim_ind_ << std::endl; 
+    path_finder.print_path();
 
-    while (status_ != WAITING_IN_LINE && cur_ind != aim_ind_)
-    {
-        std::cout << "cur coord = ( " << x_ << ", " << y_ << " )" << std::endl;
-        std::cout << "cur_ind = " << cur_ind << std::endl;
-        make_step();
-
-        //x_ = next_coord.first;
-        //y_ = next_coord.second;
-        std::cout << "new x y = " << x_ << ", " << y_ << std::endl;
-
-        path_.erase(path_.begin());
-        cur_ind = f2dto1d(x_, y_, field_.get_wid());
-        std::cout << "cur_ind = " << cur_ind << std::endl;
-
-        int a = 0;
-        scanf("%d", &a);
-    }
+    status_ = GOING_TO_GATE;
 }
 
-size_t Passenger::reg_proc()
+size_t Passenger::reg()
 {
+    printf("find gate\n");
     auto& gates = field_.get_gates();
     size_t gatenum = rand() % gates.size();
     RegOffice* the_office = static_cast<RegOffice*>(field_.get_cell_by_ind(aim_ind_));
@@ -97,32 +79,41 @@ size_t Passenger::reg_proc()
     return gates[gatenum]; 
 }
 
-void Passenger::end_algo()
+//!! шагать нужно до того момента, пока мы не достигнем цели или не встанем в очередь (стоит проверять статус пассажира)
+
+//-------------------------------------------------------------------------------
+
+void Passenger::plan_step()
 {
-    aim_ind_ = reg_proc();
-    AStarPathFinder path_finder(field_);
-    size_t cur_ind = f2dto1d(x_, y_, field_.get_wid());
-    path_ = path_finder.find_path(cur_ind, aim_ind_);
-    std::cout << "path to gate ind" << aim_ind_ << std::endl; 
-    path_finder.print_path();
-    move();
+    //!нужно еще обработать случай, когда только один элемент в пути - тогда шаг делать не надо. 
+    if (path_.size() == 1)
+    {
+        end_of_path();
+        return;
+    }
+
+    size_t next_cell_ind = path_[1];
+    size_t cur_ind = path_[0];
+    std::cout << "size " << path_.size() << " cur ind " << cur_ind << " next_ind " << next_cell_ind << std::endl;
+    step_status_ = field_.check_next_step(aim_ind_, cur_ind, next_cell_ind);
+
+    std::cout << "step_status " << step_status_ << std::endl;
 }
 
 void Passenger::make_step()
 {
+    std::cout << "MAKE STEP" << std::endl;
     size_t next_cell_ind = path_[1];
     size_t cur_ind = path_[0];
-    PathSituation step_status = field_.check_next_step(aim_ind_, cur_ind, next_cell_ind);
-    printf("pathsituation = %d\n", step_status);
     std::pair<size_t, size_t> next_coord = f1dto2d(next_cell_ind, field_.get_wid());
     
-    switch(step_status)
+    switch(step_status_)
     {
         case PASSING_BY:
         case FREE:
         {
             printf("step\n");
-            step(next_coord);
+            simple_step(next_coord);
             break;
         }
         case COLLISION:
@@ -159,15 +150,22 @@ void Passenger::make_step()
     }
 }
 
-void Passenger::step(std::pair<size_t, size_t> next_coord)
+void Passenger::simple_step(std::pair<size_t, size_t> next_coord)
 {
+    size_t old_ind = f2dto1d(next_coord.first, next_coord.second, field_.get_wid());
+    Cell* old_cell = field_.get_cell_by_ind(old_ind);
+    old_cell->set_cell_free();
     x_ = next_coord.first;
     y_ = next_coord.second;
+    path_.erase(path_.begin());
+    size_t ind = f2dto1d(next_coord.first, next_coord.second, field_.get_wid());
+    Cell* cell = field_.get_cell_by_ind(ind);
+    cell->set_psg(this);
 }
     
 void Passenger::get_in_line()
 {
-    set_status(WAITING_IN_LINE); //стоит ли делать так, чтобы он попробовал найти последнего в очереди? можно потом добавить
+    set_status(WAITING); //стоит ли делать так, чтобы он попробовал найти последнего в очереди? можно потом добавить
 }
 
 void Passenger::get_around_opponent(size_t cur_ind, size_t opponents_ind)
@@ -182,6 +180,18 @@ void Passenger::get_around_queue(size_t cur_ind)
     std::vector<size_t> new_obstacles = field_.update_obstacles_by_queues();
     AStarPathFinder path_finder(field_, new_obstacles);
     std::vector<size_t> updated_path = path_finder.find_path(cur_ind, aim_ind_);
+}
+
+void Passenger::end_of_path()
+{
+    if (status_ == GOING_TO_REG)
+        status_ = REG; 
+    if (status_ == GOING_TO_GATE)
+    {
+        size_t cur_ind = f2dto1d(x_, y_, field_.get_wid());
+        Cell* cell = field_.get_cell_by_ind(cur_ind);
+        cell->set_cell_free();
+    }
 }
 
 //-----------------------------------------------------------

@@ -75,14 +75,8 @@ void AStarPathFinder::update_open_cells(AStarCell& cur, size_t aim)
         std::pair<int, int> new_coord = {cur_coord.first + step.first, cur_coord.second + step.second};
         //std::cout << "new step " << new_coord.first << ", " << new_coord.second << std::endl;
         
-        if (new_coord.first < 0 || new_coord.second < 0)
+        if (new_coord.first < 0 || new_coord.second < 0 || new_coord.first >= static_cast<int>(field_.get_wid()) || new_coord.second >= static_cast<int>(field_.get_heig()))
         {
-            //std::cout << "less" << std::endl;
-            continue;
-        }
-        if (new_coord.first > static_cast<int>(field_.get_wid()) || new_coord.second > static_cast<int>(field_.get_heig()))
-        {
-            //std::cout << "more" << std::endl;
             continue;
         }
         size_t new_start = f2dto1d(new_coord.first, new_coord.second, field_.get_wid());

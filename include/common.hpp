@@ -18,17 +18,17 @@ inline std::pair<size_t, size_t> f1dto2d (size_t ind, size_t wid)
 
 enum StatusTypes
 {
-    NULLPTR,
-    WAITING_IN_LINE, 
-    CHOOSING_DESK,
-    GOING_TO_DESK,
-    GOING_TO_GATE,
-    //REG
+    NULLPTR,            //хммм
+    FIND_REG,
+    GOING_TO_REG,
+    WAITING,
+    REG,
+    GOING_TO_GATE
 };
 
 enum PathSituation
 {
-    NO_CELL_NULLPTR,
+    NO_CELL_NULLPTR,        //хммм
     FREE,
     COLLISION,
     QUEUE,

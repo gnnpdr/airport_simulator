@@ -65,17 +65,18 @@ sf::Color SFMLRenderVisitor::get_passenger_color(Passenger* psg)
 {
     switch(psg->get_status())
     {
-        case WAITING_IN_LINE:
+        case WAITING:
             return sf::Color::Red;
         case NULLPTR:
-            return sf::Color::White;
-        case CHOOSING_DESK:
-            return sf::Color::Black;
-        case GOING_TO_DESK:
+            return sf::Color::Green;
+        case GOING_TO_REG:
+        case FIND_REG:
             return sf::Color::Magenta;
         case GOING_TO_GATE:
-            return sf::Color::Cyan;
+            return sf::Color::Blue;
+        case REG:
+            return sf::Color::Yellow;
     }
 
-    return sf::Color::White;
+    return sf::Color::Black;
 }

@@ -19,9 +19,11 @@ class Passenger : public GameObject
     size_t speed_ = MID_SPEED;
     size_t aim_ind_;
     std::vector<size_t> path_;
-    StatusTypes status_ = CHOOSING_DESK;
+    StatusTypes status_ = FIND_REG;
 
     Field& field_;
+
+    PathSituation step_status_;
 
 public:
 
@@ -39,16 +41,17 @@ public:
     void set_status(StatusTypes new_status) {status_ = new_status;}
     void set_aim(size_t aim);
 
+    void plan_step();
     void make_step();
-    void step(std::pair<size_t, size_t> next_coord);
+    void simple_step(std::pair<size_t, size_t> next_coord);
     void get_in_line();
     void get_around_opponent(size_t cur_ind, size_t opponents_ind);
     void get_around_queue(size_t cur_ind);
     
-    void start_algo();
-    void move();
-    size_t reg_proc();
-    void end_algo();
+    void find_reg();
+    size_t reg();
+    void find_gate();
+    void end_of_path();
 
     void accept(Visitor& visitor) override 
     {

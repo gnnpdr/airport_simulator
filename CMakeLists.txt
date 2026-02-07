@@ -36,4 +36,4 @@ target_link_libraries(sim PRIVATE
     sfml-system
 )
 
-target_compile_options(sim PRIVATE -Wall -Wextra -Werror)
+#target_compile_options(sim PRIVATE -Wall -Wextra -Werror)

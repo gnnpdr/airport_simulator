@@ -56,6 +56,11 @@ Passenger* Cell::get_psg()
     return psg_;
 }
 
+void Cell::set_psg(Passenger* psg)
+{
+    psg_ = psg;
+}
+
 //-----------------------------------------------------------
 
 Gate::Gate(size_t x, size_t y, size_t gatenum) : Cell(x, y), gatenum_(gatenum) {}
@@ -220,22 +225,29 @@ size_t Field::find_free_reg_office_ind()
 
 PathSituation Field::check_next_step(size_t psg_aim, size_t psg_cur_ind, size_t next_step_ind)
 {
+    std::cout << "check_next_step!!" << std::endl;
     Cell* cell = get_cell_by_ind(next_step_ind);
     if (!cell)
         return NO_CELL_NULLPTR;
 
     if (!cell->is_occupied())
     {
-        if (!is_there_others_interested(next_step_ind))
+        if (!is_there_others_interested(psg_cur_ind, next_step_ind))
+        {
+            printf("free\n");
             return FREE;
+        }
+
+        printf("other interested\n");
         return OTHER_INTERESTED;
     }
     
     bool is_psg_nullptr = cell->is_psg_nullptr();
     if (!is_psg_nullptr)
     {
+        printf("!is_psg_nullptr\n");
         StatusTypes opponent_status = cell->get_psg_status();
-        if (opponent_status == WAITING_IN_LINE)
+        if (opponent_status == WAITING)
         {
             size_t opponents_aim = cell->get_psg_aim_ind();
             if (opponents_aim == psg_aim)
@@ -250,24 +262,22 @@ PathSituation Field::check_next_step(size_t psg_aim, size_t psg_cur_ind, size_t 
     return PASSING_BY;
 }
 
-bool Field::is_there_others_interested(size_t next_step_ind)
+bool Field::is_there_others_interested(size_t cur_ind, size_t next_step_ind)
 {
     std::pair<int, int> cur_coord = f1dto2d(next_step_ind, wid_);
     for (auto& step : steps)
     {
         std::pair<int, int> new_coord = {cur_coord.first + step.first, cur_coord.second + step.second};
         //std::cout << "new step " << new_coord.first << ", " << new_coord.second << std::endl;
-        if (new_coord.first < 0 || new_coord.second < 0)
-        {
-            //std::cout << "less" << std::endl;
+        if (new_coord.first < 0 || new_coord.second < 0 || new_coord.first >= static_cast<int>(wid_) || new_coord.second >= static_cast<int>(heig_))
             continue;
-        }
-        if (new_coord.first > static_cast<int>(wid_) || new_coord.second > static_cast<int>(heig_))
-        {
-            //std::cout << "more" << std::endl;
-            continue;
-        }
+
+
         size_t cell_ind = f2dto1d(new_coord.first, new_coord.second, wid_);
+
+        if (cell_ind == cur_ind)
+            continue;
+
         Cell* cell = get_cell_by_ind(cell_ind);
         
         size_t opponents_aim = cell->get_psg_aim_ind();
@@ -298,4 +308,79 @@ std::vector<size_t> Field::update_obstacles_by_queues()
             obstacles.push_back(ind);
     }
     return obstacles;
+}
+
+
+//сначала проходим по всем пассажирам и простраиваем путь тем, кому нужно - состояния - FIND_REG и REG
+//!в это время сразу меняется состояние и они могут сразу участвовать в планировании маршрутов других, это нормально
+//!!причем тем, кто выбрал регистратуру не нужно занимать очередь в момент, когда они только выдвигаются, пусть они занимают очередь, когда становятся в конец очереди
+//!!или достигают регистратуры, иначе опять получится изменение состояния поля между планированием и шагом
+//затем проходимся по тем, кто планирует шагать - ROING_TO_REG, WAITING (им же нужно двигаться в очереди), GOING_TO_GATE
+//затем все единоразово шагаем
+void Field::update(float delta_time)
+{
+    if (is_paused_) return;
+
+    printf("wow\n");
+    simulation_time_ += delta_time;
+
+    set_paths();
+    plan_steps();
+    step();
+}
+
+void Field::set_paths()
+{
+    printf("palaning paths\n");
+
+    for (auto& psg : passengers_)
+    {
+        std::cout << "cur coord = ( " << psg.get_x() << ", " << psg.get_y() << " )";
+        std::cout << " psg status " << psg.get_status() << std::endl;
+
+        if (psg.get_status() == FIND_REG)
+        {
+            std::cout << "find reg cur coord = ( " << psg.get_x() << ", " << psg.get_y() << " )";
+            psg.find_reg();
+        }
+        else if (psg.get_status() == REG)
+            psg.find_gate();
+    }
+}
+
+void Field::plan_steps()
+{
+    printf("plan steps\n");
+    //так как в прошлой функции мы уже заполнили все планы и поменяли все статусы, остались только эти три - те, для которых планируют шаг
+    for (auto& psg : passengers_)
+        psg.plan_step();
+        
+}
+
+void Field::step()
+{
+    for (auto& psg : passengers_)
+        psg.make_step();
+}
+
+Passenger& Field::add_passenger()
+{
+    passengers_.emplace_back(*this); 
+    Passenger& new_passenger = passengers_.back();
+    
+    size_t enter_ind = rand() % enterances_.size();
+    size_t enter_coord_1d = enterances_[enter_ind];
+    auto enter_coord_2d = f1dto2d(enter_coord_1d, wid_);
+    
+    Cell* cell = get_cell_by_ind(enter_coord_1d);
+    cell->set_psg(&new_passenger);
+    //тупо это, нужно фул координату сетить
+    new_passenger.set_x(enter_coord_2d.first);
+    new_passenger.set_y(enter_coord_2d.second);
+    
+    std::cout << "passenger inited on cell (" 
+              << enter_coord_2d.first << ", " 
+              << enter_coord_2d.second << ")" << std::endl;
+    
+    return new_passenger;
 }
