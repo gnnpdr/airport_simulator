@@ -1,5 +1,6 @@
 #pragma once
 #include "common.hpp"
+#include "astar.hpp"
 #include "psg.hpp"
 #include <vector>
 #include <memory>
@@ -10,9 +11,9 @@
 
 class Passenger;
 
-
 //-------------------------------------------------------------------------------------------------
 
+//нужен для того, чтобы довольно просто устроить конструктор поля
 enum CellType
 {
     SIMPLE,
@@ -22,38 +23,23 @@ enum CellType
     ENTER
 };
 
-const size_t CELL_SIZE = 1;
-
 class Cell : GameObject
 {
 protected:
 
-    size_t x_ = 0;
-    size_t y_ = 0;
+    size_t ind_ = 0;
     bool passable_ = true;
-    Passenger* psg_ = nullptr;
-    //bool occupied_by_queue_ = false;
+
+    std::weak_ptr<Passenger> psg_;
 
 public:
 
     Cell() = default;
-    Cell(size_t x, size_t y);
-    Cell(size_t x, size_t y, bool passable);
+    Cell(size_t ind_);
+    Cell(size_t ind_, bool passable);
 
-    size_t get_x () const;
-    size_t get_y () const;
+    size_t get_ind () const;
     bool is_passable () const;
-    bool is_occupied();
-    void set_cell_free();
-    void set_psg(Passenger* psg);
-
-    //info about cur passenger
-    size_t get_next_psg_step();
-    StatusTypes get_psg_status();
-    size_t get_psg_aim_ind();
-    bool is_psg_nullptr();
-
-    Passenger* get_psg();
 
     bool operator==(const Cell& other) const;
 
@@ -61,6 +47,16 @@ public:
     {
         visitor.visit(this);
     }
+
+    bool is_occupied() const;
+    void set_cell_free();
+    void set_psg(std::shared_ptr<Passenger> psg);
+
+    size_t get_next_psg_step();
+    StatusTypes get_psg_status();
+    size_t get_psg_aim_ind();
+
+    std::shared_ptr<Passenger> get_psg() const;
 };
 
 //-----------------------------------------------------------
@@ -71,7 +67,7 @@ class Gate : public Cell
 
 public:
 
-    Gate(size_t x, size_t y, size_t gatenum);
+    Gate(size_t ind, size_t gatenum);
     size_t get_gatenum () const;
 
     void accept(Visitor& visitor) override 
@@ -88,7 +84,7 @@ class Enterance : public Cell
 
 public:
 
-    Enterance(size_t x, size_t y, size_t enternum);
+    Enterance(size_t ind, size_t enternum);
     size_t get_enternum () const;
 
     void accept(Visitor& visitor) override 
@@ -105,7 +101,7 @@ class RegOffice : public Cell
 
 public:
 
-    RegOffice(size_t x, size_t y);
+    RegOffice(size_t ind);
 
     void take_turn();
     void free_queue_space();
@@ -133,7 +129,7 @@ class Field : GameObject
     std::vector<size_t> gates_;
     std::vector<size_t> obstacles_;
 
-    std::vector<Passenger> passengers_;
+    std::vector<std::shared_ptr<Passenger>> passengers_;
 
     bool is_paused_ = false;
     float simulation_time_ = 0.0f;
@@ -142,12 +138,8 @@ public:
 
     size_t get_heig () const;
     size_t get_wid () const;
-    const std::vector<size_t>& get_reg_offices () const;
-    const std::vector<size_t>& get_enterances () const;
-    const std::vector<size_t>& get_gates () const;
-    const std::vector<size_t>& get_obstacles () const;
-    bool is_passable(size_t ind);
     Cell* get_cell_by_ind(size_t ind) const ;
+    std::vector<size_t>& get_obstacles();
 
     Field(size_t heig, size_t wid, 
           const std::vector<std::pair<size_t, size_t>>& obstacles_pos,
@@ -157,7 +149,7 @@ public:
 
     size_t find_free_reg_office_ind();
 
-    Passenger& add_passenger();
+    std::shared_ptr<Passenger> add_passenger();
 
     void accept(Visitor& visitor) override 
     {
@@ -169,13 +161,21 @@ public:
         is_paused_ = !is_paused_;
     }
 
-    PathSituation check_next_step(size_t psg_aim, size_t psg_cur_ind, size_t next_step_ind);
-    bool is_there_others_interested(size_t cur_ind, size_t next_step_ind);
-    std::vector<size_t> update_obstacles_by_opponent(size_t opponents_coord);
-    std::vector<size_t> update_obstacles_by_queues();
-
     void update(float delta_time);
     void set_paths();
+    void reset_statuses();
+    void solve_collisions();
     void plan_steps();
     void step();
+
+
+    size_t reg();
+    PathSituation check_next_step(size_t psg_aim, size_t psg_cur_ind, size_t next_step_ind);
+    std::vector<size_t> update_obstacles_by_opponent(size_t opponents_coord);
+    std::vector<size_t> update_obstacles_by_queues(size_t aim_reg_office_ind);
+
+    void end_of_path(std::shared_ptr<Passenger> psg);
+    void move_psg(std::shared_ptr<Passenger> psg);
+    void set_to_line(std::shared_ptr<Passenger> psg);
+    void get_around_queue(std::shared_ptr<Passenger> psg);
 };

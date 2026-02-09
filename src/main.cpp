@@ -26,7 +26,7 @@ int main()
 
     SFMLRenderVisitor render_visitor(window);
     
-    Passenger& p1 = field.add_passenger();
+    field.add_passenger();
     
     while (window.isOpen()) 
     {
@@ -47,27 +47,17 @@ int main()
 
         time_since_last_update += update_clock.restart();
         
-        //
         while (time_since_last_update > time_per_update) 
         {
             time_since_last_update -= time_per_update;
             
             field.update(time_per_update.asSeconds() * simulation_speed);
-
-            printf("here\n");
-            //int a = 0;
-            //scanf("%d", &a);
         }
         
         window.clear(sf::Color(50, 50, 50)); 
         field.accept(render_visitor);
         window.display();
     }
-
-    //
-    //std::cout << "p coords " << p1.get_x() << ", " << p1.get_y() << std::endl;
-    //p1.start_algo();
-    //p1.end_algo();
 
     return 0;
 }

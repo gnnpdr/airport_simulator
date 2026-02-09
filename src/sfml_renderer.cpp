@@ -7,6 +7,7 @@ SFMLRenderVisitor::SFMLRenderVisitor(sf::RenderWindow& window) : window_(window)
 void SFMLRenderVisitor::visit(Cell* cell)
 {
     sf::RectangleShape rect(sf::Vector2f(40, 40));
+    //cell->get_ind();
     rect.setPosition(cell->get_x() * 40.0f, cell->get_y() * 40.0f);
     rect.setFillColor(cell->is_passable() ? sf::Color::White : sf::Color::Black);
     window_.draw(rect);

@@ -29,11 +29,12 @@ enum StatusTypes
 enum PathSituation
 {
     NO_CELL_NULLPTR,        //хммм
+    RESET,
     FREE,
-    COLLISION,
+    COLLISION_WAIT,
+    COLLISION_GO,
     QUEUE,
     PASSING_BY,
-    OTHER_INTERESTED,
     QUEUE_OBSTACLE
 };
 
