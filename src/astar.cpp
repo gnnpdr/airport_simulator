@@ -33,7 +33,7 @@ std::vector<size_t> AStarPathFinder::find_path(size_t start, size_t aim)
         open_cells_.pop();
         if (closed_cells_.contains(cur.ind_)) 
         {
-            std::cout << "closed" << std::endl;
+            //std::cout << "closed" << std::endl;
             continue;
         }
         closed_cells_.insert(cur.ind_);

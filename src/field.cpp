@@ -1,14 +1,13 @@
 #include "field.hpp"
 
-Cell::Cell(size_t ind) : ind_(ind) {}
-Cell::Cell(size_t ind, bool passable) : ind_(ind),  passable_(passable) {} 
+Cell::Cell(size_t x, size_t y) : x_(x), y_(y) {}
+Cell::Cell(size_t x, size_t y, bool passable) : x_(x), y_(y),  passable_(passable) {} 
 
-size_t Cell::get_ind () const {return ind_;}
 bool Cell::is_passable () const {return passable_;}
 
 bool Cell::operator==(const Cell& other) const 
 {
-    return ind_ == other.ind_;
+    return x_ == other.x_ && y_ == other.y_;
 }
 
  bool Cell::is_occupied() const 
@@ -55,19 +54,19 @@ size_t Cell::get_psg_aim_ind()
 
 //-----------------------------------------------------------
 
-Gate::Gate(size_t ind, size_t gatenum) : Cell(ind), gatenum_(gatenum) {}
+Gate::Gate(size_t x, size_t y, size_t gatenum) : Cell(x, y), gatenum_(gatenum) {}
 
 size_t Gate::get_gatenum () const {return gatenum_;}
 
 //-----------------------------------------------------------
 
-Enterance::Enterance(size_t ind, size_t enternum) : Cell(ind), enternum_(enternum) {}
+Enterance::Enterance(size_t x, size_t y, size_t enternum) : Cell(x, y), enternum_(enternum) {}
 
 size_t Enterance::get_enternum () const {return enternum_;}
 
 //-----------------------------------------------------------
 
-RegOffice::RegOffice(size_t ind) : Cell(ind, true) {}
+RegOffice::RegOffice(size_t x, size_t y) : Cell(x, y, true) {}
 
 void RegOffice::take_turn()
 {
@@ -142,36 +141,39 @@ Field::Field(size_t heig, size_t wid,
 
     for (size_t ind = 0; ind < wid_*heig_; ind++)
     {
+        auto coord = f1dto2d(ind, wid_);
+        size_t x = coord.first;
+        size_t y = coord.second;
         switch(field_prototipe[ind])
         {
             case SIMPLE:
             {
-                std::unique_ptr<Cell> cell = std::make_unique<Cell>(ind, true);
+                std::unique_ptr<Cell> cell = std::make_unique<Cell>(x, y, true);
                 cells_.push_back(std::move(cell));
                 break;
             }
             case OBSTACLE:
             {
-                std::unique_ptr<Cell> cell = std::make_unique<Cell>(ind, false);
+                std::unique_ptr<Cell> cell = std::make_unique<Cell>(x, y, false);
                 cells_.push_back(std::move(cell));
                 break;  
             }
             case OFFICE:
             {
-                std::unique_ptr<Cell> cell = std::make_unique<RegOffice>(ind);
+                std::unique_ptr<Cell> cell = std::make_unique<RegOffice>(x, y);
                 cells_.push_back(std::move(cell));
                 break;
             }
             case ENTER:
             {
-                std::unique_ptr<Cell> cell = std::make_unique<Enterance>(ind, enter_cnt);
+                std::unique_ptr<Cell> cell = std::make_unique<Enterance>(x, y, enter_cnt);
                 enter_cnt++;
                 cells_.push_back(std::move(cell));
                 break;
             }
             case GATE:
             {
-                std::unique_ptr<Cell> cell = std::make_unique<Gate>(ind, gate_cnt);
+                std::unique_ptr<Cell> cell = std::make_unique<Gate>(x, y, gate_cnt);
                 gate_cnt++;
                 cells_.push_back(std::move(cell));
                 break;
@@ -187,11 +189,13 @@ std::shared_ptr<Passenger> Field::add_passenger()
     auto new_passenger = std::make_shared<Passenger>();
     
     size_t enter_ind = rand() % enterances_.size();
-    size_t enter_coord = enterances_[enter_ind];
+    size_t enter_coord_1d = enterances_[enter_ind];
+    std::pair<size_t, size_t> enter_coord_2d = f1dto2d(enter_coord_1d, wid_);
     
-    new_passenger->set_ind(enter_coord);
+    new_passenger->set_x(enter_coord_2d.first);
+    new_passenger->set_y(enter_coord_2d.second);
     
-    Cell* cell = get_cell_by_ind(enter_coord);
+    Cell* cell = get_cell_by_ind(enter_coord_1d);
     cell->set_psg(new_passenger);
     
     passengers_.push_back(new_passenger);
@@ -210,6 +214,7 @@ std::shared_ptr<Passenger> Field::add_passenger()
 //затем все единоразово шагаем
 void Field::update(float delta_time)
 {
+    printf("update\n");
     if (is_paused_) return;
 
     simulation_time_ += delta_time;
@@ -225,19 +230,30 @@ void Field::update(float delta_time)
 
 void Field::set_paths()
 {
+    printf("set paths\n");
     for (auto& psg : passengers_)
     {
-        size_t cur_ind = psg->get_ind();
+        StatusTypes status = psg->get_status();
+        printf("status %d\n", status);
+        if (status != FIND_REG && status != REG)
+            continue;
+        
+        size_t cur_x = psg->get_x();
+        size_t cur_y = psg->get_y();
+        size_t cur_ind = f2dto1d(cur_x, cur_y, wid_);
         size_t aim_ind = 0;
-        if (psg->get_status() == FIND_REG)
+        if (status == FIND_REG)
         {
             aim_ind = find_free_reg_office_ind();
             psg->set_aim(aim_ind);
             psg->set_status(GOING_TO_REG);
         }
-        else if (psg->get_status() == REG)
+        else if (status == REG)
         {
-            //адо куда-то вставить, что он занимает место в очереди и освобождает его
+            size_t reg_office_ind = psg->get_aim();
+            RegOffice* reg_office = static_cast<RegOffice*>(get_cell_by_ind(reg_office_ind));
+            reg_office->free_queue_space();
+            
             aim_ind = reg();
             psg->set_aim(aim_ind);
             psg->set_status(GOING_TO_GATE);
@@ -248,12 +264,13 @@ void Field::set_paths()
 
         psg->set_path(path);
 
-        //path_finder.print_path();
+        path_finder.print_path();
     }
 }
 
 void Field::reset_statuses()
 {
+    printf("reset statuses\n");
     for (auto& psg : passengers_)
     {
         psg->set_step_status(RESET);
@@ -262,10 +279,12 @@ void Field::reset_statuses()
 
 void Field::solve_collisions()
 {
+    printf("solve collisions\n");
+
     for (size_t ind = 0; ind < wid_ * heig_; ind++)
     {
         Cell* cell = get_cell_by_ind(ind);
-        if (!cell->is_occupied())
+        if (!cell || !cell->is_occupied())
             continue;
 
         size_t next_step_ind = cell->get_next_psg_step();
@@ -274,28 +293,36 @@ void Field::solve_collisions()
         for (auto& step : steps)
         {
             std::pair<int, int> new_coord = {next_step_coord.first + step.first, next_step_coord.second + step.second};
-            //std::cout << "new step " << new_coord.first << ", " << new_coord.second << std::endl;
             if (new_coord.first < 0 || new_coord.second < 0 || new_coord.first >= static_cast<int>(wid_) || new_coord.second >= static_cast<int>(heig_))
                 continue;
 
             size_t cell_ind = f2dto1d(new_coord.first, new_coord.second, wid_);
 
-            Cell* cell = get_cell_by_ind(cell_ind);
+            Cell* neighbor_cell = get_cell_by_ind(cell_ind);
 
-            size_t opponents_aim = cell->get_psg_aim_ind();
+            if (!neighbor_cell) continue;
+
+            size_t opponents_aim = neighbor_cell->get_psg_aim_ind();
             if (opponents_aim == ERROR_VAL)
                 continue;           //здесь просто нет пассажира
             if (opponents_aim == next_step_ind)
                 interested.push_back(cell_ind);
         }
 
-        size_t walker_ind = rand() % interested.size();
-        for (size_t ind : interested)
+        if (interested.empty())
+            continue;
+    
+        size_t walker_ind = interested[rand() % interested.size()];
+        for (size_t cell_ind : interested)
         {
-            Cell* cell = get_cell_by_ind(ind);
+            Cell* conflict_cell = get_cell_by_ind(ind);
+            if (!conflict_cell) 
+                continue;
             auto psg = cell->get_psg();
+            if (!psg) 
+                continue;
 
-            if (ind = walker_ind)
+            if (cell_ind == walker_ind)
             {
                 psg->set_step_status(COLLISION_GO);
             }
@@ -303,12 +330,14 @@ void Field::solve_collisions()
                 psg->set_step_status(COLLISION_WAIT);
         }
     }
-}
+}   
 
 void Field::plan_steps()
 {
+    printf("plan steps\n");
     for (auto& psg : passengers_)
     {
+        printf("status %d\n", psg->get_status());
         if (psg->get_step_status() != RESET)
             continue;
 
@@ -406,7 +435,9 @@ void Field::move_psg(std::shared_ptr<Passenger> psg)
 
     next_cell->set_psg(psg);
     cur_cell->set_cell_free();
-    psg->set_ind(path[1]);
+    auto next_coord = f1dto2d(path[1], wid_);
+    psg->set_x(next_coord.first);
+    psg->set_y(next_coord.second);
     path.erase(path.begin());
     psg->set_path(path);
 }
@@ -422,7 +453,9 @@ void Field::set_to_line(std::shared_ptr<Passenger> psg)
 
 void Field::get_around_queue(std::shared_ptr<Passenger> psg)
 {
-    size_t cur_ind = psg->get_ind();
+    size_t cur_x = psg->get_x();
+    size_t cur_y = psg->get_y();
+    size_t cur_ind = f2dto1d(cur_x, cur_y, wid_);
     size_t aim_reg_office_ind = psg->get_aim();
     std::vector<size_t> new_obstacles = update_obstacles_by_queues(aim_reg_office_ind);
     AStarPathFinder path_finder(*this, new_obstacles);
@@ -458,7 +491,9 @@ std::vector<size_t> Field::update_obstacles_by_queues(size_t aim_reg_office_ind)
 
         if (psg_aim != aim_reg_office_ind)
         {
-            size_t psg_ind = psg->get_ind();
+            size_t cur_x = psg->get_x();
+            size_t cur_y = psg->get_y();
+            size_t psg_ind = f2dto1d(cur_x, cur_y, wid_);
             obstacles.push_back(psg_ind);
         }
     }
@@ -482,12 +517,32 @@ void Field::end_of_path(std::shared_ptr<Passenger> psg)
     }
     if (psg_status == GOING_TO_GATE)
     {
-        size_t psg_ind = psg->get_ind();
-        Cell* cell = get_cell_by_ind(psg_ind);
-        cell->set_cell_free();
+        remove_psg(psg);
     }
 }
 
+
+void Field::remove_psg(std::shared_ptr<Passenger> psg)
+{
+    if (!psg)   
+        return;
+
+    size_t cur_x = psg->get_x();
+    size_t cur_y = psg->get_y();
+    size_t psg_ind = f2dto1d(cur_x, cur_y, wid_);
+    Cell* cell = get_cell_by_ind(psg_ind);
+    if (cell)
+        cell->set_cell_free();
+
+    auto it = std::find(passengers_.begin(), passengers_.end(), psg);
+    if (it != passengers_.end()) 
+    {
+        // Удаляем из вектора - shared_ptr автоматически уничтожит объект
+        // когда на него не останется сильных ссылок
+        passengers_.erase(it);
+    } else
+        std::cout << "Psg not found" << std::endl;
+}
 
 //-----------------------------------------------------
 

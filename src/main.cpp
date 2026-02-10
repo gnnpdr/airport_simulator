@@ -14,7 +14,7 @@ int main()
     sf::Clock update_clock; 
     sf::Time time_since_last_update = sf::Time::Zero;
 
-    const sf::Time time_per_update = sf::seconds(1.5f / 1.0f);
+    const sf::Time time_per_update = sf::seconds(0.5f / 1.0f);
     const float simulation_speed = 1.0f; 
 
     std::vector<std::pair<size_t, size_t>> obstacles = {{0, 0}, {5, 5}};

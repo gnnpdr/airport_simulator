@@ -7,7 +7,6 @@ SFMLRenderVisitor::SFMLRenderVisitor(sf::RenderWindow& window) : window_(window)
 void SFMLRenderVisitor::visit(Cell* cell)
 {
     sf::RectangleShape rect(sf::Vector2f(40, 40));
-    //cell->get_ind();
     rect.setPosition(cell->get_x() * 40.0f, cell->get_y() * 40.0f);
     rect.setFillColor(cell->is_passable() ? sf::Color::White : sf::Color::Black);
     window_.draw(rect);
@@ -52,12 +51,16 @@ void SFMLRenderVisitor::visit(Field* field)
     for (size_t ind = 0; ind < field->get_heig() * field->get_wid(); ind++) 
     {
         Cell* cell = field->get_cell_by_ind(ind);
-        
-        cell->accept(*this);
-        if (!cell->is_psg_nullptr()) 
+
+        if(cell)
         {
-            Passenger* passenger = cell->get_psg();
-            passenger->accept(*this);
+            cell->accept(*this);
+            if (cell->is_occupied()) 
+            {
+                auto psg = cell->get_psg();
+                if (psg)
+                    psg->accept(*this);
+            }
         }
     }
 }

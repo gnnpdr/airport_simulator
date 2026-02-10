@@ -9,7 +9,8 @@ const size_t LOW_SPEED = 10;
 
 class Passenger : public GameObject
 {
-    size_t ind_;
+    size_t x_ = 0;
+    size_t y_ = 0;
 
     size_t speed_ = MID_SPEED;
     size_t aim_ind_;
@@ -24,10 +25,12 @@ public:
 
     size_t get_aim () const;
     const std::vector<size_t>& get_path () const;
-    size_t get_ind() const;
     StatusTypes get_status() const;
     size_t get_next_step() const;
-    void set_ind(size_t ind) {ind_ = ind;}
+    void set_x(size_t x) {x_ = x;}
+    void set_y(size_t y) {y_ = y;}
+    size_t get_x() {return x_;}
+    size_t get_y() {return y_;}
     void set_status(StatusTypes new_status) {status_ = new_status;}
     void set_aim(size_t aim);
     void set_path(std::vector<size_t> path);

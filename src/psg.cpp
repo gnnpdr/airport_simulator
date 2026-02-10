@@ -2,7 +2,6 @@
 
 Passenger::Passenger(size_t speed) : speed_(speed) {}
  
-size_t Passenger::get_ind() const {return ind_;}
 StatusTypes Passenger::get_status() const {return status_;}
 size_t Passenger::get_aim () const {return aim_ind_;}
 const std::vector<size_t>& Passenger::get_path () const {return path_;}

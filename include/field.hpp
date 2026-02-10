@@ -27,7 +27,8 @@ class Cell : GameObject
 {
 protected:
 
-    size_t ind_ = 0;
+    size_t x_ = 0;
+    size_t y_ = 0;
     bool passable_ = true;
 
     std::weak_ptr<Passenger> psg_;
@@ -35,10 +36,13 @@ protected:
 public:
 
     Cell() = default;
-    Cell(size_t ind_);
-    Cell(size_t ind_, bool passable);
+    Cell(size_t x, size_t y);
+    Cell(size_t x, size_t y, bool passable);
 
-    size_t get_ind () const;
+    void set_x(size_t x) {x_ = x;}
+    void set_y(size_t y) {y_ = y;}
+    size_t get_x() {return x_;}
+    size_t get_y() {return y_;}
     bool is_passable () const;
 
     bool operator==(const Cell& other) const;
@@ -67,7 +71,7 @@ class Gate : public Cell
 
 public:
 
-    Gate(size_t ind, size_t gatenum);
+    Gate(size_t x, size_t y, size_t gatenum);
     size_t get_gatenum () const;
 
     void accept(Visitor& visitor) override 
@@ -84,7 +88,7 @@ class Enterance : public Cell
 
 public:
 
-    Enterance(size_t ind, size_t enternum);
+    Enterance(size_t x, size_t y, size_t enternum);
     size_t get_enternum () const;
 
     void accept(Visitor& visitor) override 
@@ -101,7 +105,7 @@ class RegOffice : public Cell
 
 public:
 
-    RegOffice(size_t ind);
+    RegOffice(size_t x, size_t y);
 
     void take_turn();
     void free_queue_space();
@@ -175,6 +179,7 @@ public:
     std::vector<size_t> update_obstacles_by_queues(size_t aim_reg_office_ind);
 
     void end_of_path(std::shared_ptr<Passenger> psg);
+    void remove_psg(std::shared_ptr<Passenger> psg);
     void move_psg(std::shared_ptr<Passenger> psg);
     void set_to_line(std::shared_ptr<Passenger> psg);
     void get_around_queue(std::shared_ptr<Passenger> psg);
