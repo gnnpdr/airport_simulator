@@ -7,8 +7,11 @@ const size_t MID_SPEED = 50;
 const size_t HIGH_SPEED = 100;
 const size_t LOW_SPEED = 10;
 
+
+
 class Passenger : public GameObject
 {
+    size_t num_;
     size_t x_ = 0;
     size_t y_ = 0;
 
@@ -20,8 +23,8 @@ class Passenger : public GameObject
 
 public:
 
-    Passenger() = default;
-    Passenger(size_t speed);
+    Passenger(size_t num);
+    Passenger(size_t num, size_t speed);
 
     size_t get_aim () const;
     const std::vector<size_t>& get_path () const;
@@ -29,8 +32,18 @@ public:
     size_t get_next_step() const;
     void set_x(size_t x) {x_ = x;}
     void set_y(size_t y) {y_ = y;}
-    size_t get_x() {return x_;}
-    size_t get_y() {return y_;}
+
+    size_t get_num() { return num_;}
+    size_t get_x() 
+    {
+        //std::cout << "[DEBUG] Passenger::get_x() = " << x_ << std::endl;
+        return x_;
+    }
+    size_t get_y() 
+    {
+        //std::cout << "[DEBUG] Passenger::get_y() = " << y_ << std::endl;
+        return y_;
+    }
     void set_status(StatusTypes new_status) {status_ = new_status;}
     void set_aim(size_t aim);
     void set_path(std::vector<size_t> path);

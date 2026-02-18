@@ -1,6 +1,8 @@
 #include "psg.hpp"
 
-Passenger::Passenger(size_t speed) : speed_(speed) {}
+Passenger::Passenger(size_t num) : num_(num) {}
+
+Passenger::Passenger(size_t num, size_t speed) : num_(num), speed_(speed) {}
  
 StatusTypes Passenger::get_status() const {return status_;}
 size_t Passenger::get_aim () const {return aim_ind_;}

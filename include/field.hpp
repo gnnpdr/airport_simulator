@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <queue>
 #include "visitor.hpp"
 
 class Passenger;
@@ -99,9 +100,9 @@ public:
 
 //-----------------------------------------------------------
 
-class RegOffice : public Cell
+/*class RegOffice : public Cell
 {
-    size_t queue_len_ = 0;
+    std::deque<std::shared_ptr<Passenger>> queue_;
 
 public:
 
@@ -112,7 +113,93 @@ public:
 
     size_t get_queue_len () const;
 
+   
+};*/
+
+class RegOffice : public Cell 
+{
+private:
+
+    int service_time_ = 0;
+    const int SERVICE_DURATION = 3;
+    std::queue<std::weak_ptr<Passenger>> queue_;
+    
+public:
+
+    RegOffice(size_t x, size_t y) : Cell(x, y, true) {} 
+
+    int get_service_time ()
+    {
+        return service_time_;
+    }
+
+    void update() 
+    {
+        service_time_--;
+        if (service_time_ <= 0) 
+        {
+            std::cout << "RegOffice is free now" << std::endl;
+        }
+    }
+
+    //bool is_occupied() const 
+    //{
+    //    return Cell::is_occupied() || service_time_ > 0;
+    //}
+
+    bool is_occupied() const 
+    {
+        bool cell_occupied = Cell::is_occupied();
+        bool service_busy = service_time_ > 0;
+
+        std::cout << "RegOffice is_occupied: cell=" << cell_occupied 
+                  << ", service=" << service_busy 
+                  << ", result=" << (cell_occupied || service_busy) << std::endl;
+
+        if (cell_occupied) {
+            auto psg = get_psg();
+            if (psg) {
+                std::cout << "  Passenger " << psg->get_num() 
+                          << " status " << psg->get_status() << std::endl;
+            }
+        }
+
+        return cell_occupied || service_busy;
+    }
+    
+    void take_turn(std::shared_ptr<Passenger> psg);
+    
+    
+    void add_to_queue(std::shared_ptr<Passenger> psg) 
+    {
+        queue_.push(psg);
+        //std::cout << "Passenger added to queue. Queue size: " << queue_.size() << std::endl;
+    }
+    
+    bool is_next_in_queue(std::shared_ptr<Passenger> psg) 
+    {
+        if (queue_.empty()) 
+            return false;
+
+        if (auto next = queue_.front().lock()) 
+            return next == psg;
+        return false;
+    }
+    
+    void pop_queue() 
+    {
+        if (!queue_.empty())
+            queue_.pop();
+    }
+    
+    void free_queue_space()  
+    {
+        pop_queue();
+    }
+
     bool operator<(const RegOffice& other) const;
+
+    size_t get_queue_len () const {return queue_.size();}
 
     void accept(Visitor& visitor) override 
     {
@@ -134,6 +221,8 @@ class Field : GameObject
     std::vector<size_t> obstacles_;
 
     std::vector<std::shared_ptr<Passenger>> passengers_;
+    std::deque<std::shared_ptr<Passenger>> entrance_queue_;
+    std::vector<size_t> free_enterances_;
 
     bool is_paused_ = false;
     float simulation_time_ = 0.0f;
@@ -144,6 +233,10 @@ public:
     size_t get_wid () const;
     Cell* get_cell_by_ind(size_t ind) const ;
     std::vector<size_t>& get_obstacles();
+    std::vector<size_t>& get_reg_offices()
+    {
+        return reg_offices_;
+    }
 
     Field(size_t heig, size_t wid, 
           const std::vector<std::pair<size_t, size_t>>& obstacles_pos,
@@ -153,7 +246,7 @@ public:
 
     size_t find_free_reg_office_ind();
 
-    std::shared_ptr<Passenger> add_passenger();
+    std::shared_ptr<Passenger> add_passenger(size_t num);
 
     void accept(Visitor& visitor) override 
     {
@@ -178,9 +271,10 @@ public:
     std::vector<size_t> update_obstacles_by_opponent(size_t opponents_coord);
     std::vector<size_t> update_obstacles_by_queues(size_t aim_reg_office_ind);
 
-    void end_of_path(std::shared_ptr<Passenger> psg);
+    //void end_of_path(std::shared_ptr<Passenger> psg);
     void remove_psg(std::shared_ptr<Passenger> psg);
     void move_psg(std::shared_ptr<Passenger> psg);
     void set_to_line(std::shared_ptr<Passenger> psg);
     void get_around_queue(std::shared_ptr<Passenger> psg);
+    void process_entrance_queue();
 };

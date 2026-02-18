@@ -13,6 +13,9 @@ inline std::pair<size_t, size_t> f1dto2d (size_t ind, size_t wid)
     size_t x = ind % wid;
     size_t y = ind / wid;
 
+    //std::cout << "[DEBUG] f1dto2d: ind=" << ind << ", wid=" << wid 
+    //          << " -> x=" << x << ", y=" << y << std::endl;
+
     return {x, y};
 }
 
@@ -35,7 +38,10 @@ enum PathSituation
     COLLISION_GO,
     QUEUE,
     PASSING_BY,
-    QUEUE_OBSTACLE
+    QUEUE_OBSTACLE,
+    NO_MOVING,
+    REALLY_REG,
+    START_REG
 };
 
 const std::vector<std::pair<int, int>> steps = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};

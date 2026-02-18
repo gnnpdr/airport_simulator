@@ -6,6 +6,8 @@ SFMLRenderVisitor::SFMLRenderVisitor(sf::RenderWindow& window) : window_(window)
     
 void SFMLRenderVisitor::visit(Cell* cell)
 {
+    //std::cout << "[DEBUG] Drawing cell at (" << cell->get_x() << ", " 
+    //          << cell->get_y() << ")" << std::endl;
     sf::RectangleShape rect(sf::Vector2f(40, 40));
     rect.setPosition(cell->get_x() * 40.0f, cell->get_y() * 40.0f);
     rect.setFillColor(cell->is_passable() ? sf::Color::White : sf::Color::Black);

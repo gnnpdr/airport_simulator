@@ -1,7 +1,17 @@
 #include "astar.hpp"
 
-AStarPathFinder::AStarPathFinder(Field& field) : field_(field), obstacles_(field_.get_obstacles()) {}
-AStarPathFinder::AStarPathFinder(Field& field, std::vector<size_t> obstacles) : field_(field), obstacles_(obstacles) {}
+AStarPathFinder::AStarPathFinder(size_t aim, size_t start, Field& field) : aim_(aim), start_(start), field_(field)
+{
+    //запрещаем пассажирам ходить по клеткам егистрации, если это не их цель попасть туда
+    std::vector<size_t> obstacles;
+    obstacles.reserve(field_.get_obstacles().size() + field_.get_reg_offices().size());
+    obstacles.insert(obstacles.end(), field_.get_obstacles().begin(), field_.get_obstacles().end());
+    obstacles.insert(obstacles.end(), field_.get_reg_offices().begin(), field_.get_reg_offices().end());
+    obstacles.erase(std::remove(obstacles.begin(), obstacles.end(), aim_), obstacles.end());
+    obstacles_ = obstacles;
+}
+
+AStarPathFinder::AStarPathFinder(size_t aim, size_t start, Field& field, std::vector<size_t> obstacles) : field_(field), aim_(aim), start_(start), obstacles_(obstacles) {}
 
 bool AStarCell::operator>(const AStarCell& other) const 
 {
@@ -20,11 +30,11 @@ bool AStarCell::operator<(const AStarCell& other) const
     return ind_ < other.ind_;
 }
 
-std::vector<size_t> AStarPathFinder::find_path(size_t start, size_t aim)
+std::vector<size_t> AStarPathFinder::find_path()
 {
-    size_t aim_dist = find_aim_dist(start, aim);
-    open_cells_.emplace(start, 0, aim_dist, 0 + aim_dist);
-    parents_[start] = start;
+    size_t aim_dist = find_aim_dist(start_, aim_);
+    open_cells_.emplace(start_, 0, aim_dist, 0 + aim_dist);
+    parents_[start_] = start_;
     while (!open_cells_.empty())
     {
         //std::cout << "aim " << aim << std::endl;
@@ -37,13 +47,13 @@ std::vector<size_t> AStarPathFinder::find_path(size_t start, size_t aim)
             continue;
         }
         closed_cells_.insert(cur.ind_);
-        if (cur.ind_ == aim)
+        if (cur.ind_ == aim_)
         {
-            path_ = reconstruct_path(start, aim);
+            path_ = reconstruct_path(start_, aim_);
             return path_;
         }
             
-        update_open_cells(cur, aim);
+        update_open_cells(cur, aim_);
     }
     return {};
 }

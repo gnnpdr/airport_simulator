@@ -30,19 +30,24 @@ class AStarPathFinder
     std::unordered_map<size_t, size_t> parents_;
 
     Field& field_;
+    size_t aim_;
+    size_t start_;
     std::vector<size_t> path_;
     std::vector<size_t> obstacles_;
 
 public:
 
-    AStarPathFinder(Field& field);
-    AStarPathFinder(Field& field, std::vector<size_t> obstacles);
+    AStarPathFinder(size_t aim, size_t start, Field& field);
+    AStarPathFinder(size_t aim, size_t start, Field& field, std::vector<size_t> obstacles);
 
-    std::vector<size_t> find_path(size_t start, size_t aim);
+    std::vector<size_t> find_path();
+    void print_path();
+
+private:
+
     std::vector<size_t> reconstruct_path (size_t start, size_t aim);
     void update_open_cells(AStarCell& cur, size_t aim);
     size_t find_aim_dist(size_t start, size_t aim);
-    void print_path();
 };
 
 inline void print_priority_queue(std::priority_queue<AStarCell, std::vector<AStarCell>, std::greater<AStarCell>>& original_pq) 

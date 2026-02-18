@@ -21,6 +21,7 @@ endif()
 add_executable(sim 
     src/main.cpp
     src/field.cpp
+    src/field_path_things.cpp
     src/psg.cpp
     src/astar.cpp
     src/sfml_renderer.cpp

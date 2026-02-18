@@ -14,7 +14,7 @@ int main()
     sf::Clock update_clock; 
     sf::Time time_since_last_update = sf::Time::Zero;
 
-    const sf::Time time_per_update = sf::seconds(0.5f / 1.0f);
+    const sf::Time time_per_update = sf::seconds(2.0f / 1.0f);
     const float simulation_speed = 1.0f; 
 
     std::vector<std::pair<size_t, size_t>> obstacles = {{0, 0}, {5, 5}};
@@ -24,9 +24,11 @@ int main()
 
     Field field(6, 6, obstacles, reg_offices, enters, gates);
 
+    std::cout << "Field size: wid " << field.get_wid() << " heigh " << field.get_heig() << std::endl;
+
     SFMLRenderVisitor render_visitor(window);
-    
-    field.add_passenger();
+
+    size_t num = 0;
     
     while (window.isOpen()) 
     {
@@ -41,8 +43,12 @@ int main()
             {
                 if (event.key.code == sf::Keyboard::Space)
                     window.close();
+                if (event.key.code == sf::Keyboard::W)
+                {
+                    field.add_passenger(num);
+                    num++;
+                }
             }
-            
         }
 
         time_since_last_update += update_clock.restart();
